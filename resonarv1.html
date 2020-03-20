@@ -138,7 +138,7 @@ player.get('sad').start();
             let axios_url = "https://freesound.org/apiv2/search/text/?" + "query=" + userQuery + "&token="+token
             let freesound = await axios.get(axios_url);
             let query = freesound.data.results;
-            let axios_url_sound = "http://freesound.org/apiv2/sounds/" + query[indexQuery].id + "/"
+            let axios_url_sound = "https://freesound.org/apiv2/sounds/" + query[indexQuery].id + "/"
             let sound_headers = {headers: { "Authorization" : "Token "+token}};
             let soundFound = await axios.get(axios_url_sound,sound_headers)
             let soundAdd = soundFound.data.previews["preview-hq-mp3"];
@@ -206,69 +206,7 @@ player.get('sad').start();
         }
 
 
-/*
-<textarea cols="25" rows="9" id="sample-text">sample("bass", 9);
-sample("stab", 7)
-sample("kick",0);
-sample("snare", 1);
-sample("hihat", 6);</textarea>
-    <div id="search" onclick="do_search();" >search</div>
-    <div id="searching" style="display: none">searching...</div>
-    <div id="go" onclick="go();" style="display: none;">play</div>
-    <div id="stop" onclick="stop();" style="display: none;">stop</div>    
-    <div id="editor"> 
-tempo(120);
-if ([0,2,4,6,8,10,12,13,14,15].indexOf(idx) >= 0)
-    p2.get('hihat').start();
-        
-if ([0,4,8,12].indexOf(idx) >= 0)
-    p2.get('kick').start();
-        
-if ([4,12].indexOf(idx) >= 0)
-    p2.get('snare').start();
-            
-if ([3,6,11,14].indexOf(idx) >= 0)
-    p2.get('bass').start();    
-        
-if ([0].indexOf(idx) >= 0)
-    p2.get('stab').start(); 
-    
-        
-    </div>
-*/
-/*
-<textarea cols="25" rows="9" id="sample-text">sample("spooky", 5);
-sample("metal", 1)
-sample("kick",0);
-sample("snare", 1);
-sample("choir", 2);
-</textarea>
-    <div id="search" onclick="do_search();" >search</div>
-    <div id="searching" style="display: none">searching...</div>
-    <div id="go" onclick="go();" style="display: none;">play</div>
-    <div id="stop" onclick="stop();" style="display: none;">stop</div>    
-    <div id="editor">if([0,,2,4,5,6,7,9].indexOf(idx) >= 0)
-    p2.get('hihat').start();
-if([0,4,8,12].indexOf(idx) >= 0)
-    p2.get('kick').start();
-if ([3,6,11,14].indexOf(idx) >= 0)
-    p2.get('snare').start();
-if ([1,4,5,6].indexOf(idx) >= 0)
-    p2.get('metal').start();    
-if ([0].indexOf(idx) >= 0)
-    p2.get('choir').start(); 
-if ([0].indexOf(idx) >= 0)
-    p2.get('spooky').start();
-    
-        
-    </div>
-*/
-/*
 
-
-
-
- */
     </script>
 
 
