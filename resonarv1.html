@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Resonar</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/13.3.21/Tone.js"  ></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.2/ace.js" ></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<style>
+html, body {width:100%; height: 100%; background-color: rgb(41, 38, 38);} 
+#editor {font-size: small; width: 100%; height:calc(100% - 40px);}
+#searching,#go, #stop, #getSamples, #loadSampler, #search,#error {
+    display: inline-block;
+    width: 100px;
+    height: 30;
+    border-radius: 20px;
+    border: 1px solid black;
+    text-align: center;
+    line-height: 30px;
+    margin: 5px;
+    background-color: whitesmoke;
+}
+#searching{
+
+    background-color: lightgreen;
+}
+#error{
+
+    background-color: red;
+}
+#search:hover,#go:hover, #stop:hover{ background:#ccc; cursor: pointer;}
+
+</style>
+</head>
+
+<body>
+<textarea cols="25" rows="9" id="sample-text">
+sample("bass", 9);
+sample("stab", 7);
+sample("kick",0);
+sample("snare", 1);
+sample("hihat", 6);
+sample("sad", 1);
+</textarea>
+    <div id="search" onclick="do_search();" >search</div>
+    <div id="searching" style="display: none">searching...</div>
+    <div id="go" onclick="go();" style="display: none;">play</div>
+    <div id="stop" onclick="stop();" style="display: none;">stop</div>    
+    <div id="error" onclick="stop();" style="display: none;">error</div>    
+    <div id="editor"> 
+ 
+tempo(82);
+if ([0,2,3,4,6,8,10,12,13,14,15].indexOf(idx) >= 0)
+player.get('hihat').start();
+                        
+if ([0,4,8,12].indexOf(idx) >= 0)
+player.get('kick').start();
+                        
+if ([3,6,11,14].indexOf(idx) >= 0)
+player.get('snare').start();
+                            
+if ([0,3,5,7,9,13,15].indexOf(idx) >= 0)
+player.get('bass').start();    
+                        
+if ([0].indexOf(idx) >= 0)
+player.get('stab').start(); 
+                                   
+if ([0].indexOf(idx) >= 0)
+player.get('sad').start();      
+          
+        
+    </div>
+</body>
+
+
+    <script>
+        let error_btn = document.getElementById('error')
+        function do_search(argument) {
+            // console.log("argument : ",argument);
+            document.getElementById('searching').style.display='inline-block';
+            get_samples_text();
+        }
+
+        function get_samples_text(argument) {
+            let text_area = document.querySelector('#sample-text')
+            // console.log("text_area : ",text_area);
+            load_samples_text = text_area.value
+            // console.log("load_samples_text : ",load_samples_text);
+            let array_lines = load_samples_text.split('\n')
+            array_lines = array_lines.filter(x=>x.trim()!=='')
+            // console.log("array_lines : ",array_lines);
+            let text_to_eval = array_lines
+            .map((x,i,a)=>{
+                console.log("x : ",x);
+                return i>=a.length-1?"return "+x:"await "+x
+            })
+            .join('\n')
+            text_to_eval = "async function load_things(argument) {"+''+text_to_eval+"}"
+            console.log("text_to_eval : ",text_to_eval);
+            eval(text_to_eval)
+            // window.load_things = load_things;
+            // do_load_things()
+            load_things().then(function (argument) {
+                soundObject = argument;
+                console.log("soundObject : ",soundObject);
+                player = load( soundObject);
+                let go_btn = document.getElementById('go')
+                go_btn.style.display = 'inline-block'
+                document.getElementById('stop').style.display = 'inline-block'
+                document.getElementById('searching').style.display = 'none'
+
+            })
+
+        }
+
+        function do_load_things(argument) {
+        }
+        /*
+        async function load_things(argument) {
+            await sample("bass", 9)
+            await sample("stab", 7)
+            await sample("kick",0);
+            await sample("snare", 1);
+            return sample("hihat", 6);
+        }
+        */
+        var editor = ace.edit('editor');
+        editor.setTheme('ace/theme/monokai');
+        editor.getSession().setMode('ace/mode/javascript');
+        editor.setOptions({fontSize:'9pt'});
+        var active = false;
+        var vol = new Tone.Volume(0).toMaster();
+
+        let soundObject = {};
+        let player;
+        let sampler = "";
+        async function sample(userQuery, indexQuery){
+            let token = 'IO0e6RRS9b6JWoCKoQBrgAhixbp7uPVRF24UNWyl';
+            let axios_url = "https://freesound.org/apiv2/search/text/?" + "query=" + userQuery + "&token="+token
+            let freesound = await axios.get(axios_url);
+            let query = freesound.data.results;
+            let axios_url_sound = "http://freesound.org/apiv2/sounds/" + query[indexQuery].id + "/"
+            let sound_headers = {headers: { "Authorization" : "Token "+token}};
+            let soundFound = await axios.get(axios_url_sound,sound_headers)
+            let soundAdd = soundFound.data.previews["preview-hq-mp3"];
+            soundObject[userQuery] = soundAdd;
+            return soundObject;
+        }
+
+
+        function load( soundObject){
+            sampler = new Tone.Players(soundObject);
+            sampler.connect(vol);
+            return sampler;
+        }
+
+        
+                function tempo(temp) {
+                    
+                    Tone.Transport.bpm.value = temp;
+                }
+        var once=true;
+        function go() {
+            
+            if (!active) {
+                console.log('playing');
+                active = true;
+                Tone.context.latencyHint = 'fastest';
+                var temp = 120;
+                function tempo(temp) {
+                    
+                    Tone.Transport.bpm.value = temp;
+                }
+                
+                var seq = new Tone.Sequence(function(time, idx)
+                {
+                    // console.log("idx : ",idx);
+                    try{
+
+                        error_btn.style.display='none'
+                        eval(editor.getValue());
+                    }catch(error){
+                        console.log("error : ",error);
+                        error_btn.style.display='inline-block'
+
+                    }
+                }, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], "16n");
+
+                Tone.Transport.start('+0')
+                seq.start();
+            }
+            if(once){
+                once=false;
+                console.log('is once');
+                setTimeout(function() {stop();go();}, 10);
+                // stop();
+                // go()
+            }
+         
+        }
+        function stop() { 
+
+            Tone.Transport.stop();
+            active = false;
+          
+            
+        }
+
+
+/*
+<textarea cols="25" rows="9" id="sample-text">sample("bass", 9);
+sample("stab", 7)
+sample("kick",0);
+sample("snare", 1);
+sample("hihat", 6);</textarea>
+    <div id="search" onclick="do_search();" >search</div>
+    <div id="searching" style="display: none">searching...</div>
+    <div id="go" onclick="go();" style="display: none;">play</div>
+    <div id="stop" onclick="stop();" style="display: none;">stop</div>    
+    <div id="editor"> 
+tempo(120);
+if ([0,2,4,6,8,10,12,13,14,15].indexOf(idx) >= 0)
+    p2.get('hihat').start();
+        
+if ([0,4,8,12].indexOf(idx) >= 0)
+    p2.get('kick').start();
+        
+if ([4,12].indexOf(idx) >= 0)
+    p2.get('snare').start();
+            
+if ([3,6,11,14].indexOf(idx) >= 0)
+    p2.get('bass').start();    
+        
+if ([0].indexOf(idx) >= 0)
+    p2.get('stab').start(); 
+    
+        
+    </div>
+*/
+/*
+<textarea cols="25" rows="9" id="sample-text">sample("spooky", 5);
+sample("metal", 1)
+sample("kick",0);
+sample("snare", 1);
+sample("choir", 2);
+</textarea>
+    <div id="search" onclick="do_search();" >search</div>
+    <div id="searching" style="display: none">searching...</div>
+    <div id="go" onclick="go();" style="display: none;">play</div>
+    <div id="stop" onclick="stop();" style="display: none;">stop</div>    
+    <div id="editor">if([0,,2,4,5,6,7,9].indexOf(idx) >= 0)
+    p2.get('hihat').start();
+if([0,4,8,12].indexOf(idx) >= 0)
+    p2.get('kick').start();
+if ([3,6,11,14].indexOf(idx) >= 0)
+    p2.get('snare').start();
+if ([1,4,5,6].indexOf(idx) >= 0)
+    p2.get('metal').start();    
+if ([0].indexOf(idx) >= 0)
+    p2.get('choir').start(); 
+if ([0].indexOf(idx) >= 0)
+    p2.get('spooky').start();
+    
+        
+    </div>
+*/
+/*
+
+
+
+
+ */
+    </script>
+
+
+</html>
+
+
+
+
